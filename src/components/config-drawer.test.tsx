@@ -44,6 +44,7 @@ describe('ConfigDrawer (integration)', () => {
 
     document.documentElement.classList.remove('light', 'dark')
     document.documentElement.removeAttribute('dir')
+    document.documentElement.removeAttribute('data-scheme-color')
   })
 
   it('opens the drawer and renders the sections', async () => {
@@ -59,6 +60,9 @@ describe('ConfigDrawer (integration)', () => {
     await expect.element(drawer.getByText(/^Layout$/i)).toBeInTheDocument()
     await expect
       .element(drawer.getByText(/^Sidebar$/i).first())
+      .toBeInTheDocument()
+    await expect
+      .element(drawer.getByText(/^Scheme Color$/i))
       .toBeInTheDocument()
     await expect.element(drawer.getByText(/^Direction$/i)).toBeInTheDocument()
     await expect
@@ -156,6 +160,26 @@ describe('ConfigDrawer (integration)', () => {
     })
   })
 
+  describe('scheme color', () => {
+    it('editing primary color updates cookie and root style', async () => {
+      const screen = await renderConfigDrawer()
+      await openDrawer(screen)
+
+      await userEvent.fill(
+        screen.getByRole('textbox', { name: /background/i }).first(),
+        '#72e3ad'
+      )
+      await vi.waitFor(() =>
+        expect(getCookie('vite-ui-custom-colors')).toContain('"primary":"#72e3ad"')
+      )
+      await vi.waitFor(() =>
+        expect(
+          document.documentElement.style.getPropertyValue('--primary')
+        ).toBe('#72e3ad')
+      )
+    })
+  })
+
   it('selecting full layout sets collapsible to offcanvas and closes sidebar', async () => {
     const screen = await renderConfigDrawer({ sidebarDefaultOpen: true })
     await openDrawer(screen)
@@ -183,6 +207,28 @@ describe('ConfigDrawer (integration)', () => {
         })
       )
       await vi.waitFor(() => expect(getCookie('vite-ui-theme')).toBe('system'))
+    })
+
+    it('resets scheme color via section control after editing a color', async () => {
+      const screen = await renderConfigDrawer()
+      await openDrawer(screen)
+
+      await userEvent.fill(
+        screen.getByRole('textbox', { name: /background/i }).first(),
+        '#72e3ad'
+      )
+      await vi.waitFor(() =>
+        expect(getCookie('vite-ui-custom-colors')).toContain('"primary":"#72e3ad"')
+      )
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: /reset scheme color configuration/i,
+        })
+      )
+      await vi.waitFor(() =>
+        expect(getCookie('vite-ui-custom-colors')).toBeUndefined()
+      )
     })
 
     it('resets direction via section control after choosing RTL', async () => {
@@ -284,6 +330,10 @@ describe('ConfigDrawer (integration)', () => {
     await openDrawer(screen)
 
     await userEvent.click(screen.getByRole('radio', { name: /select dark/i }))
+    await userEvent.fill(
+      screen.getByRole('textbox', { name: /background/i }).first(),
+      '#72e3ad'
+    )
     await userEvent.click(
       screen.getByRole('radio', { name: /select right to left/i })
     )
@@ -295,6 +345,9 @@ describe('ConfigDrawer (integration)', () => {
     )
 
     await vi.waitFor(() => expect(getCookie('vite-ui-theme')).toBe('dark'))
+    await vi.waitFor(() =>
+      expect(getCookie('vite-ui-custom-colors')).toContain('"primary":"#72e3ad"')
+    )
     await vi.waitFor(() => expect(getCookie('dir')).toBe('rtl'))
     await vi.waitFor(() => expect(getCookie('layout_variant')).toBe('floating'))
     await vi.waitFor(() =>
@@ -310,6 +363,9 @@ describe('ConfigDrawer (integration)', () => {
     await vi.waitFor(() => expect(getCookie('sidebar_state')).toBe('true'))
     await vi.waitFor(() => expect(getCookie('dir')).toBeUndefined())
     await vi.waitFor(() => expect(getCookie('vite-ui-theme')).toBeUndefined())
+    await vi.waitFor(() =>
+      expect(getCookie('vite-ui-custom-colors')).toBeUndefined()
+    )
     await vi.waitFor(() => expect(getCookie('layout_variant')).toBe('inset'))
     await vi.waitFor(() => expect(getCookie('layout_collapsible')).toBe('icon'))
     await vi.waitFor(() =>

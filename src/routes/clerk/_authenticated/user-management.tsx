@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   createFileRoute,
   Link,
@@ -7,19 +8,18 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { SignedIn, useAuth, UserButton } from '@clerk/clerk-react'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Loader2 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
 import { Button } from '@/components/ui/button'
 import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { LearnMore } from '@/components/learn-more'
 import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { UsersDialogs } from '@/features/users/components/users-dialogs'
 import { UsersPrimaryButtons } from '@/features/users/components/users-primary-buttons'
 import { UsersProvider } from '@/features/users/components/users-provider'
 import { UsersTable } from '@/features/users/components/users-table'
-import { users } from '@/features/users/data/users'
+import { getUsers, usersQueryKey } from '@/features/users/data/users'
 
 export const Route = createFileRoute('/clerk/_authenticated/user-management')({
   component: UserManagement,
@@ -31,6 +31,17 @@ function UserManagement() {
 
   const [opened, setOpened] = useState(true)
   const { isLoaded, isSignedIn } = useAuth()
+  const {
+    data: users = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: usersQueryKey,
+    queryFn: getUsers,
+    enabled: isLoaded && isSignedIn,
+  })
 
   if (!isLoaded) {
     return (
@@ -50,7 +61,6 @@ function UserManagement() {
         <UsersProvider>
           <Header fixed>
             <Search className='me-auto' />
-            <ThemeSwitch />
             <UserButton />
           </Header>
 
@@ -88,7 +98,25 @@ function UserManagement() {
               <UsersPrimaryButtons />
             </div>
             <div className='-mx-4 flex-1 overflow-auto px-4 py-1 lg:flex-row lg:space-y-0 lg:space-x-12'>
-              <UsersTable data={users} navigate={navigate} search={search} />
+              {isLoading ? (
+                <div className='flex min-h-80 items-center justify-center rounded-md border'>
+                  <Loader2 className='size-6 animate-spin' />
+                </div>
+              ) : isError ? (
+                <div className='flex min-h-80 flex-col items-center justify-center gap-3 rounded-md border p-6 text-center'>
+                  <AlertTriangle className='size-6 text-destructive' />
+                  <p className='text-sm text-muted-foreground'>
+                    {error instanceof Error
+                      ? error.message
+                      : 'Erro ao carregar usuários.'}
+                  </p>
+                  <Button variant='outline' onClick={() => refetch()}>
+                    Tentar novamente
+                  </Button>
+                </div>
+              ) : (
+                <UsersTable data={users} navigate={navigate} search={search} />
+              )}
             </div>
           </Main>
 

@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle } from 'lucide-react'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { toast } from 'sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { type User } from '../data/schema'
+import { deleteUser, usersQueryKey } from '../data/users'
 
 type UserDeleteDialogProps = {
   open: boolean
@@ -21,12 +23,24 @@ export function UsersDeleteDialog({
   currentRow,
 }: UserDeleteDialogProps) {
   const [value, setValue] = useState('')
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: () => deleteUser(currentRow.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usersQueryKey })
+      toast.success('Usuário removido.')
+      setValue('')
+      onOpenChange(false)
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir usuário.')
+    },
+  })
 
   const handleDelete = () => {
     if (value.trim() !== currentRow.username) return
 
-    onOpenChange(false)
-    showSubmittedData(currentRow, 'The following user has been deleted:')
+    mutation.mutate()
   }
 
   return (
@@ -34,7 +48,7 @@ export function UsersDeleteDialog({
       open={open}
       onOpenChange={onOpenChange}
       form='users-delete-form'
-      disabled={value.trim() !== currentRow.username}
+      disabled={value.trim() !== currentRow.username || mutation.isPending}
       title={
         <span className='text-destructive'>
           <AlertTriangle
@@ -82,7 +96,7 @@ export function UsersDeleteDialog({
           </Alert>
         </form>
       }
-      confirmText='Delete'
+      confirmText={mutation.isPending ? 'Deleting...' : 'Delete'}
       destructive
     />
   )

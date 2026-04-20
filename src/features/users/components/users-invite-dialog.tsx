@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { MailPlus, Send } from 'lucide-react'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -25,6 +26,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { SelectDropdown } from '@/components/select-dropdown'
 import { roles } from '../data/data'
+import { inviteUser, usersQueryKey } from '../data/users'
 
 const formSchema = z.object({
   email: z.email({
@@ -46,15 +48,32 @@ export function UsersInviteDialog({
   open,
   onOpenChange,
 }: UserInviteDialogProps) {
+  const queryClient = useQueryClient()
   const form = useForm<UserInviteForm>({
     resolver: zodResolver(formSchema),
     defaultValues: { email: '', role: '', desc: '' },
   })
 
+  const mutation = useMutation({
+    mutationFn: (values: UserInviteForm) =>
+      inviteUser({
+        email: values.email,
+        role: values.role as (typeof roles)[number]['value'],
+        description: values.desc,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usersQueryKey })
+      toast.success('Convite registrado como usuário pendente.')
+      form.reset()
+      onOpenChange(false)
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erro ao convidar usuário.')
+    },
+  })
+
   const onSubmit = (values: UserInviteForm) => {
-    form.reset()
-    showSubmittedData(values)
-    onOpenChange(false)
+    mutation.mutate(values)
   }
 
   return (
@@ -140,8 +159,12 @@ export function UsersInviteDialog({
           <DialogClose asChild>
             <Button variant='outline'>Cancel</Button>
           </DialogClose>
-          <Button type='submit' form='user-invite-form'>
-            Invite <Send />
+          <Button
+            type='submit'
+            form='user-invite-form'
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? 'Inviting...' : 'Invite'} <Send />
           </Button>
         </DialogFooter>
       </DialogContent>

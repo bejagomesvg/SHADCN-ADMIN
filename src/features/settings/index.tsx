@@ -6,7 +6,6 @@ import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { SidebarNav } from './components/sidebar-nav'
 
 const sidebarNavItems = [
@@ -43,7 +42,6 @@ export function Settings() {
       {/* ===== Top Heading ===== */}
       <Header>
         <Search className='me-auto' />
-        <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
       </Header>

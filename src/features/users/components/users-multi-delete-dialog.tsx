@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { type Table } from '@tanstack/react-table'
 import { AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { sleep } from '@/lib/utils'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { deleteUsers, usersQueryKey } from '../data/users'
 
 type UserMultiDeleteDialogProps<TData> = {
   open: boolean
@@ -24,8 +25,25 @@ export function UsersMultiDeleteDialog<TData>({
   table,
 }: UserMultiDeleteDialogProps<TData>) {
   const [value, setValue] = useState('')
+  const queryClient = useQueryClient()
 
   const selectedRows = table.getFilteredSelectedRowModel().rows
+  const selectedIds = selectedRows.map((row) => (row.original as { id: string }).id)
+  const mutation = useMutation({
+    mutationFn: () => deleteUsers(selectedIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usersQueryKey })
+      setValue('')
+      table.resetRowSelection()
+      onOpenChange(false)
+      toast.success(
+        `Deleted ${selectedRows.length} ${selectedRows.length > 1 ? 'users' : 'user'}`
+      )
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erro ao excluir usuários.')
+    },
+  })
 
   const handleDelete = () => {
     if (value.trim() !== CONFIRM_WORD) {
@@ -33,19 +51,7 @@ export function UsersMultiDeleteDialog<TData>({
       return
     }
 
-    onOpenChange(false)
-
-    toast.promise(sleep(2000), {
-      loading: 'Deleting users...',
-      success: () => {
-        setValue('')
-        table.resetRowSelection()
-        return `Deleted ${selectedRows.length} ${
-          selectedRows.length > 1 ? 'users' : 'user'
-        }`
-      },
-      error: 'Error',
-    })
+    mutation.mutate()
   }
 
   return (
@@ -53,7 +59,7 @@ export function UsersMultiDeleteDialog<TData>({
       open={open}
       onOpenChange={onOpenChange}
       form='users-multi-delete-form'
-      disabled={value.trim() !== CONFIRM_WORD}
+      disabled={value.trim() !== CONFIRM_WORD || mutation.isPending}
       title={
         <span className='text-destructive'>
           <AlertTriangle
@@ -96,7 +102,7 @@ export function UsersMultiDeleteDialog<TData>({
           </Alert>
         </form>
       }
-      confirmText='Delete'
+      confirmText={mutation.isPending ? 'Deleting...' : 'Delete'}
       destructive
     />
   )

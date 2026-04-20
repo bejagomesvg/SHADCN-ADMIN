@@ -1,9 +1,11 @@
 'use client'
 
+import { useEffect } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/lib/show-submitted-data'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,6 +28,7 @@ import { PasswordInput } from '@/components/password-input'
 import { SelectDropdown } from '@/components/select-dropdown'
 import { roles } from '../data/data'
 import { type User } from '../data/schema'
+import { createUser, updateUser, usersQueryKey } from '../data/users'
 
 const formSchema = z
   .object({
@@ -105,6 +108,7 @@ export function UsersActionDialog({
   onOpenChange,
 }: UserActionDialogProps) {
   const isEdit = !!currentRow
+  const queryClient = useQueryClient()
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit
@@ -127,10 +131,61 @@ export function UsersActionDialog({
         },
   })
 
+  useEffect(() => {
+    if (!open) return
+
+    form.reset(
+      isEdit
+        ? {
+            ...currentRow,
+            password: '',
+            confirmPassword: '',
+            isEdit,
+          }
+        : {
+            firstName: '',
+            lastName: '',
+            username: '',
+            email: '',
+            role: '',
+            phoneNumber: '',
+            password: '',
+            confirmPassword: '',
+            isEdit,
+          }
+    )
+  }, [currentRow, form, isEdit, open])
+
+  const mutation = useMutation({
+    mutationFn: async (values: UserForm) => {
+      const payload = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        username: values.username,
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+        role: values.role as User['role'],
+      }
+
+      if (isEdit && currentRow) {
+        return updateUser(currentRow.id, payload)
+      }
+
+      return createUser(payload)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: usersQueryKey })
+      toast.success(isEdit ? 'Usuário atualizado.' : 'Usuário criado.')
+      form.reset()
+      onOpenChange(false)
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erro ao salvar usuário.')
+    },
+  })
+
   const onSubmit = (values: UserForm) => {
-    form.reset()
-    showSubmittedData(values)
-    onOpenChange(false)
+    mutation.mutate(values)
   }
 
   const isPasswordTouched = !!form.formState.dirtyFields.password
@@ -316,8 +371,8 @@ export function UsersActionDialog({
           </Form>
         </div>
         <DialogFooter>
-          <Button type='submit' form='user-form'>
-            Save changes
+          <Button type='submit' form='user-form' disabled={mutation.isPending}>
+            {mutation.isPending ? 'Salvando...' : 'Save changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,6 +2,11 @@ import { type ChangeEvent, useState } from 'react'
 import { getRouteApi } from '@tanstack/react-router'
 import { SlidersHorizontal, ArrowUpAZ, ArrowDownAZ } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -16,7 +21,6 @@ import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
-import { ThemeSwitch } from '@/components/theme-switch'
 import { apps } from './data/apps'
 
 const route = getRouteApi('/_authenticated/apps/')
@@ -86,7 +90,6 @@ export function Apps() {
       {/* ===== Top Heading ===== */}
       <Header>
         <Search className='me-auto' />
-        <ThemeSwitch />
         <ConfigDrawer />
         <ProfileDropdown />
       </Header>
@@ -146,28 +149,36 @@ export function Apps() {
         <Separator className='shadow-sm' />
         <ul className='faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 md:grid-cols-2 lg:grid-cols-3'>
           {filteredApps.map((app) => (
-            <li
-              key={app.name}
-              className='rounded-lg border p-4 hover:shadow-md'
-            >
-              <div className='mb-8 flex items-center justify-between'>
-                <div
-                  className={`flex size-10 items-center justify-center rounded-lg bg-muted p-2`}
-                >
-                  {app.logo}
-                </div>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className={`${app.connected ? 'border border-blue-300 bg-blue-50 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:hover:bg-blue-900' : ''}`}
-                >
-                  {app.connected ? 'Connected' : 'Connect'}
-                </Button>
-              </div>
-              <div>
-                <h2 className='mb-1 font-semibold'>{app.name}</h2>
-                <p className='line-clamp-2 text-gray-500'>{app.desc}</p>
-              </div>
+            <li key={app.name}>
+              <Card className='h-full min-h-44 gap-0 py-0 shadow-xs transition-shadow hover:shadow-md'>
+                <CardContent className='flex h-full flex-col p-5'>
+                  <div className='mb-6 flex items-start justify-between gap-4'>
+                    <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground shadow-sm ring-1 ring-border/50 [&_svg]:size-5 [&_svg]:shrink-0'>
+                      <span className='flex items-center justify-center [&_svg]:size-5 [&_svg]:shrink-0'>
+                        {app.logo}
+                      </span>
+                    </div>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      className={
+                        app.connected
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 shadow-xs hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-400 dark:hover:bg-emerald-950 dark:hover:text-emerald-300'
+                          : 'shadow-xs'
+                      }
+                      aria-label={`${app.connected ? 'Connected to' : 'Connect'} ${app.name}`}
+                    >
+                      {app.connected ? 'Connected' : 'Connect'}
+                    </Button>
+                  </div>
+                  <div className='flex flex-1 flex-col'>
+                    <CardTitle className='text-base'>{app.name}</CardTitle>
+                    <p className='mt-2 line-clamp-3 text-sm leading-7 text-muted-foreground'>
+                      {app.desc}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>

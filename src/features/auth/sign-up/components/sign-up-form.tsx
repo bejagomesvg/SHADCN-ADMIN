@@ -1,11 +1,13 @@
-import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import { Loader2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
-import { sleep, cn } from '@/lib/utils'
+import { createUser, getUserByEmail } from '@/features/users/data/users'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -17,6 +19,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { supabase } from '@/utils/supabase'
 
 const formSchema = z
   .object({
@@ -39,7 +42,7 @@ export function SignUpForm({
   className,
   ...props
 }: React.HTMLAttributes<HTMLFormElement>) {
-  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,17 +53,60 @@ export function SignUpForm({
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
+  const mutation = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      if (!supabase) {
+        throw new Error(
+          'Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.'
+        )
+      }
 
-    toast.promise(sleep(2000), {
-      loading: 'Creating account...',
-      success: () => {
-        setIsLoading(false)
-        return `Account created for ${data.email}.`
-      },
-      error: 'Error',
-    })
+      const email = data.email.trim().toLowerCase()
+      const { data: authData, error } = await supabase.auth.signUp({
+        email,
+        password: data.password,
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      const existingProfile = await getUserByEmail(email)
+
+      if (!existingProfile) {
+        const localPart = email.split('@')[0] || 'user'
+        const parts = localPart
+          .split(/[._-]+/)
+          .map((part) => part.trim())
+          .filter(Boolean)
+
+        const [firstName = 'New', ...rest] = parts
+        const lastName = rest.join(' ') || 'User'
+
+        await createUser({
+          firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+          lastName: lastName.charAt(0).toUpperCase() + lastName.slice(1),
+          username: localPart.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase(),
+          email,
+          phoneNumber: '',
+          role: 'cashier',
+          status: 'active',
+        })
+      }
+
+      return authData
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Account created for ${variables.email}.`)
+      navigate({ to: '/sign-in', replace: true })
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar conta.')
+    },
+  })
+
+  function onSubmit(data: z.infer<typeof formSchema>) {
+    mutation.mutate(data)
   }
 
   return (
@@ -109,8 +155,8 @@ export function SignUpForm({
             </FormItem>
           )}
         />
-        <Button className='mt-2' disabled={isLoading}>
-          {isLoading ? <Loader2 className='animate-spin' /> : <UserPlus />}
+        <Button className='mt-2' disabled={mutation.isPending}>
+          {mutation.isPending ? <Loader2 className='animate-spin' /> : <UserPlus />}
           Create Account
         </Button>
 
@@ -130,7 +176,7 @@ export function SignUpForm({
             variant='outline'
             className='w-full'
             type='button'
-            disabled={isLoading}
+            disabled={mutation.isPending}
           >
             <IconGithub className='h-4 w-4' /> GitHub
           </Button>
@@ -138,7 +184,7 @@ export function SignUpForm({
             variant='outline'
             className='w-full'
             type='button'
-            disabled={isLoading}
+            disabled={mutation.isPending}
           >
             <IconFacebook className='h-4 w-4' /> Facebook
           </Button>

@@ -1,13 +1,15 @@
-import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
+import { useMutation } from '@tanstack/react-query'
 import { IconFacebook, IconGithub } from '@/assets/brand-icons'
+import { normalizeAuthRedirect } from '@/features/auth/lib/redirect'
 import { useAuthStore } from '@/stores/auth-store'
-import { sleep, cn } from '@/lib/utils'
+import { buildAuthUserFromSession } from '@/features/auth/lib/session'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -19,6 +21,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { supabase } from '@/utils/supabase'
 
 const formSchema = z.object({
   email: z.email({
@@ -39,9 +42,9 @@ export function UserAuthForm({
   redirectTo,
   ...props
 }: UserAuthFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
   const { auth } = useAuthStore()
+  const safeRedirectTo = normalizeAuthRedirect(redirectTo)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,34 +54,59 @@ export function UserAuthForm({
     },
   })
 
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    setIsLoading(true)
+  const mutation = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      if (!supabase) {
+        throw new Error(
+          'Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.'
+        )
+      }
 
-    toast.promise(sleep(2000), {
-      loading: 'Signing in...',
-      success: () => {
-        setIsLoading(false)
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email.trim().toLowerCase(),
+        password: data.password,
+      })
 
-        // Mock successful authentication with expiry computed at success time
-        const mockUser = {
-          accountNo: 'ACC001',
-          email: data.email,
-          role: ['user'],
-          exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours from now
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      if (!authData.session) {
+        throw new Error('Sessão não retornada pelo Supabase.')
+      }
+
+      const authUser = await buildAuthUserFromSession(authData.session)
+
+      if (!authUser) {
+        throw new Error(
+          'Usuário autenticado, mas sem perfil correspondente em public.users.'
+        )
+      }
+
+      auth.setUser(authUser)
+      auth.setAccessToken(authData.session.access_token)
+      auth.setInitialized(true)
+
+      return authUser
+    },
+    onSuccess: (authUser) => {
+      toast.success(`Welcome back, ${authUser.email}!`)
+      navigate({ to: safeRedirectTo, replace: true })
+      window.setTimeout(() => {
+        if (window.location.pathname === '/sign-in') {
+          window.location.replace(safeRedirectTo)
         }
+      }, 50)
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : 'Erro ao autenticar usuário.'
+      )
+    },
+  })
 
-        // Set user and access token
-        auth.setUser(mockUser)
-        auth.setAccessToken('mock-access-token')
-
-        // Redirect to the stored location or default to dashboard
-        const targetPath = redirectTo || '/'
-        navigate({ to: targetPath, replace: true })
-
-        return `Welcome back, ${data.email}!`
-      },
-      error: 'Error',
-    })
+  function onSubmit(data: z.infer<typeof formSchema>) {
+    mutation.mutate(data)
   }
 
   return (
@@ -120,8 +148,8 @@ export function UserAuthForm({
             </FormItem>
           )}
         />
-        <Button className='mt-2' disabled={isLoading}>
-          {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
+        <Button className='mt-2' disabled={mutation.isPending}>
+          {mutation.isPending ? <Loader2 className='animate-spin' /> : <LogIn />}
           Sign in
         </Button>
 
@@ -137,10 +165,10 @@ export function UserAuthForm({
         </div>
 
         <div className='grid grid-cols-2 gap-2'>
-          <Button variant='outline' type='button' disabled={isLoading}>
+          <Button variant='outline' type='button' disabled={mutation.isPending}>
             <IconGithub className='h-4 w-4' /> GitHub
           </Button>
-          <Button variant='outline' type='button' disabled={isLoading}>
+          <Button variant='outline' type='button' disabled={mutation.isPending}>
             <IconFacebook className='h-4 w-4' /> Facebook
           </Button>
         </div>
