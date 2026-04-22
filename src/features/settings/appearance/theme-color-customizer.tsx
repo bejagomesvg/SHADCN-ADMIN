@@ -62,6 +62,7 @@ const SHADCN_SHADE_STEPS = [
 const SHADCN_COLOR_OPTIONS_BY_FAMILY = SHADCN_COLOR_FAMILIES.map((family) => ({
   family,
   options: SHADCN_SHADE_STEPS.map((shade) => ({
+    id: `${family}-${shade}`,
     label: `${family}-${shade}`,
     value: tailwindColors[family][shade],
   })),
@@ -285,7 +286,13 @@ function ColorField({
       <label htmlFor={`theme-color-${colorKey}`} className='text-sm'>
         {label}
       </label>
-      <Select value={selectedColorOption?.value} onValueChange={onChange}>
+      <Select
+        value={selectedColorOption?.id}
+        onValueChange={(optionId) => {
+          const option = allShadcnOptions.find((item) => item.id === optionId)
+          if (option) onChange(option.value)
+        }}
+      >
         <SelectTrigger
           id={`theme-color-${colorKey}`}
           className='w-full'
@@ -317,7 +324,7 @@ function ColorField({
               <SelectGroup>
                 <SelectLabel>{group.family}</SelectLabel>
                 {group.options.map((option) => (
-                  <SelectItem key={option.label} value={option.value}>
+                  <SelectItem key={option.id} value={option.id}>
                     <span className='flex items-center gap-2'>
                       <span
                         className='size-4 rounded-md border shadow-xs'

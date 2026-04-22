@@ -3,38 +3,38 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 const data = [
   {
     name: 'Mon',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
+    clicks: 420,
+    uniques: 310,
   },
   {
     name: 'Tue',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
+    clicks: 610,
+    uniques: 455,
   },
   {
     name: 'Wed',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
+    clicks: 540,
+    uniques: 390,
   },
   {
     name: 'Thu',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
+    clicks: 780,
+    uniques: 565,
   },
   {
     name: 'Fri',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
+    clicks: 690,
+    uniques: 510,
   },
   {
     name: 'Sat',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
+    clicks: 360,
+    uniques: 255,
   },
   {
     name: 'Sun',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
+    clicks: 480,
+    uniques: 335,
   },
 ]
 
@@ -62,6 +62,7 @@ export function AnalyticsChart() {
           className='text-primary'
           fill='currentColor'
           fillOpacity={0.15}
+          isAnimationActive={false}
         />
         <Area
           type='monotone'
@@ -70,6 +71,7 @@ export function AnalyticsChart() {
           className='text-muted-foreground'
           fill='currentColor'
           fillOpacity={0.1}
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>

@@ -1,11 +1,7 @@
 import { type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
-import { ConfigDrawer } from '@/components/config-drawer'
-import { Header } from '@/components/layout/header'
 import { Main } from '@/components/layout/main'
-import { ProfileDropdown } from '@/components/profile-dropdown'
-import { Search } from '@/components/search'
 
 type PreviewVariant = {
   title: string
@@ -999,12 +995,6 @@ function AdminPreviewCard({ variant }: { variant: PreviewVariant }) {
 export function CardModels() {
   return (
     <>
-      <Header fixed>
-        <Search className='me-auto' />
-        <ConfigDrawer />
-        <ProfileDropdown />
-      </Header>
-
       <Main className='flex flex-1 flex-col gap-4 sm:gap-6'>
         <div className='flex flex-wrap items-end justify-between gap-2'>
           <div>
