@@ -21,6 +21,7 @@ import {
   AudioWaveform,
   Command,
   GalleryVerticalEnd,
+  LayoutGrid,
 } from 'lucide-react'
 import { ClerkLogo } from '@/assets/clerk-logo'
 import { type SidebarData } from '../types'
@@ -72,6 +73,11 @@ export const sidebarData: SidebarData = {
           url: '/chats',
           badge: '3',
           icon: MessagesSquare,
+        },
+        {
+          title: 'Cards',
+          url: '/cards',
+          icon: LayoutGrid,
         },
         {
           title: 'Users',

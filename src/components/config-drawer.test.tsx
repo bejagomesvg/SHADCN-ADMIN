@@ -61,9 +61,7 @@ describe('ConfigDrawer (integration)', () => {
     await expect
       .element(drawer.getByText(/^Sidebar$/i).first())
       .toBeInTheDocument()
-    await expect
-      .element(drawer.getByText(/^Scheme Color$/i))
-      .toBeInTheDocument()
+    await expect.element(drawer.getByText(/^Color$/i)).toBeInTheDocument()
     await expect.element(drawer.getByText(/^Direction$/i)).toBeInTheDocument()
     await expect
       .element(
@@ -71,7 +69,7 @@ describe('ConfigDrawer (integration)', () => {
           name: /reset all settings to default values/i,
         })
       )
-      .toBeInTheDocument()
+      .not.toBeInTheDocument()
   })
 
   describe('theme preference', () => {
@@ -161,21 +159,16 @@ describe('ConfigDrawer (integration)', () => {
   })
 
   describe('scheme color', () => {
-    it('editing primary color updates cookie and root style', async () => {
+    it('selecting a palette updates cookie and root dataset', async () => {
       const screen = await renderConfigDrawer()
       await openDrawer(screen)
 
-      await userEvent.fill(
-        screen.getByRole('textbox', { name: /background/i }).first(),
-        '#72e3ad'
+      await userEvent.click(screen.getByRole('button', { name: /^red$/i }))
+      await vi.waitFor(() =>
+        expect(getCookie('vite-ui-scheme-color')).toBe('red')
       )
       await vi.waitFor(() =>
-        expect(getCookie('vite-ui-custom-colors')).toContain('"primary":"#72e3ad"')
-      )
-      await vi.waitFor(() =>
-        expect(
-          document.documentElement.style.getPropertyValue('--primary')
-        ).toBe('#72e3ad')
+        expect(document.documentElement.dataset.schemeColor).toBe('red')
       )
     })
   })
@@ -209,16 +202,13 @@ describe('ConfigDrawer (integration)', () => {
       await vi.waitFor(() => expect(getCookie('vite-ui-theme')).toBe('system'))
     })
 
-    it('resets scheme color via section control after editing a color', async () => {
+    it('resets scheme color via section control after choosing another palette', async () => {
       const screen = await renderConfigDrawer()
       await openDrawer(screen)
 
-      await userEvent.fill(
-        screen.getByRole('textbox', { name: /background/i }).first(),
-        '#72e3ad'
-      )
+      await userEvent.click(screen.getByRole('button', { name: /^red$/i }))
       await vi.waitFor(() =>
-        expect(getCookie('vite-ui-custom-colors')).toContain('"primary":"#72e3ad"')
+        expect(getCookie('vite-ui-scheme-color')).toBe('red')
       )
 
       await userEvent.click(
@@ -227,7 +217,7 @@ describe('ConfigDrawer (integration)', () => {
         })
       )
       await vi.waitFor(() =>
-        expect(getCookie('vite-ui-custom-colors')).toBeUndefined()
+        expect(getCookie('vite-ui-scheme-color')).toBe('orange')
       )
     })
 
@@ -330,10 +320,7 @@ describe('ConfigDrawer (integration)', () => {
     await openDrawer(screen)
 
     await userEvent.click(screen.getByRole('radio', { name: /select dark/i }))
-    await userEvent.fill(
-      screen.getByRole('textbox', { name: /background/i }).first(),
-      '#72e3ad'
-    )
+    await userEvent.click(screen.getByRole('button', { name: /^red$/i }))
     await userEvent.click(
       screen.getByRole('radio', { name: /select right to left/i })
     )
@@ -346,7 +333,7 @@ describe('ConfigDrawer (integration)', () => {
 
     await vi.waitFor(() => expect(getCookie('vite-ui-theme')).toBe('dark'))
     await vi.waitFor(() =>
-      expect(getCookie('vite-ui-custom-colors')).toContain('"primary":"#72e3ad"')
+      expect(getCookie('vite-ui-scheme-color')).toBe('red')
     )
     await vi.waitFor(() => expect(getCookie('dir')).toBe('rtl'))
     await vi.waitFor(() => expect(getCookie('layout_variant')).toBe('floating'))
@@ -364,7 +351,7 @@ describe('ConfigDrawer (integration)', () => {
     await vi.waitFor(() => expect(getCookie('dir')).toBeUndefined())
     await vi.waitFor(() => expect(getCookie('vite-ui-theme')).toBeUndefined())
     await vi.waitFor(() =>
-      expect(getCookie('vite-ui-custom-colors')).toBeUndefined()
+      expect(getCookie('vite-ui-scheme-color')).toBeUndefined()
     )
     await vi.waitFor(() => expect(getCookie('layout_variant')).toBe('inset'))
     await vi.waitFor(() => expect(getCookie('layout_collapsible')).toBe('icon'))

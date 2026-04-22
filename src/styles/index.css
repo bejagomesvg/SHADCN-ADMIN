@@ -17,6 +17,46 @@
     @apply min-h-svh w-full bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar;
   }
 
+  body,
+  [data-slot='sidebar-wrapper'] {
+    background-image:
+      radial-gradient(
+        circle at top left,
+        color-mix(in oklab, var(--primary) 22%, transparent),
+        transparent 28%
+      ),
+      radial-gradient(
+        circle at bottom right,
+        color-mix(in oklab, var(--primary) 14%, transparent),
+        transparent 24%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--background) 78%, white),
+        var(--background)
+      );
+  }
+
+  .dark body,
+  .dark [data-slot='sidebar-wrapper'] {
+    background-image:
+      radial-gradient(
+        circle at top left,
+        color-mix(in oklab, var(--primary) 18%, transparent),
+        transparent 30%
+      ),
+      radial-gradient(
+        circle at bottom right,
+        color-mix(in oklab, var(--primary) 12%, transparent),
+        transparent 24%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--background) 92%, var(--primary)),
+        var(--background)
+      );
+  }
+
   /* Override Radix scroll locking for sticky headers */
   body[data-scroll-locked] {
     overflow: unset !important;

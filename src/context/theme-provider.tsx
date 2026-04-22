@@ -1,69 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import tailwindColors from 'tailwindcss/colors'
 import { getCookie, setCookie, removeCookie } from '@/lib/cookies'
-
-type Theme = 'dark' | 'light' | 'system'
-type ResolvedTheme = Exclude<Theme, 'system'>
-export type SchemeColor =
-  | 'neutral'
-  | 'stone'
-  | 'zinc'
-  | 'slate'
-  | 'gray'
-  | 'mauve'
-  | 'olive'
-  | 'mist'
-  | 'taupe'
-  | 'red'
-  | 'orange'
-  | 'amber'
-  | 'yellow'
-  | 'lime'
-  | 'green'
-  | 'blue'
-  | 'emerald'
-  | 'teal'
-  | 'cyan'
-  | 'sky'
-  | 'indigo'
-  | 'violet'
-  | 'purple'
-  | 'fuchsia'
-  | 'pink'
-  | 'rose'
-export type CustomColorKey =
-  | 'background'
-  | 'foreground'
-  | 'primary'
-  | 'primary-foreground'
-  | 'secondary'
-  | 'secondary-foreground'
-  | 'accent'
-  | 'accent-foreground'
-  | 'card'
-  | 'card-foreground'
-  | 'popover'
-  | 'popover-foreground'
-  | 'muted'
-  | 'muted-foreground'
-  | 'destructive'
-  | 'border'
-  | 'input'
-  | 'ring'
-  | 'chart-1'
-  | 'chart-2'
-  | 'chart-3'
-  | 'chart-4'
-  | 'chart-5'
-  | 'sidebar'
-  | 'sidebar-foreground'
-  | 'sidebar-primary'
-  | 'sidebar-primary-foreground'
-  | 'sidebar-accent'
-  | 'sidebar-accent-foreground'
-  | 'sidebar-border'
-  | 'sidebar-ring'
-export type CustomColors = Partial<Record<CustomColorKey, string>>
+import type {
+  CustomColorKey,
+  CustomColors,
+  ResolvedTheme,
+  SchemeColor,
+  Theme,
+} from './theme-types'
 
 const DEFAULT_THEME = 'system'
 const DEFAULT_SCHEME_COLOR: SchemeColor = 'orange'
@@ -71,25 +15,6 @@ const THEME_COOKIE_NAME = 'vite-ui-theme'
 const SCHEME_COLOR_COOKIE_NAME = 'vite-ui-scheme-color'
 const CUSTOM_COLORS_COOKIE_NAME = 'vite-ui-custom-colors'
 const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
-export const SCHEME_COLOR_OPTIONS: Array<{
-  value: SchemeColor
-  label: string
-  swatch: string
-  group: 'neutral' | 'warm' | 'cool'
-}> = [
-  { value: 'stone', label: 'Stone', swatch: '#78716c', group: 'neutral' },
-  { value: 'neutral', label: 'Neutral', swatch: '#737373', group: 'neutral' },
-  { value: 'slate', label: 'Slate', swatch: '#64748b', group: 'neutral' },
-  { value: 'rose', label: 'Rose', swatch: '#f43f5e', group: 'warm' },
-  { value: 'orange', label: 'Orange', swatch: '#f97316', group: 'warm' },
-  { value: 'green', label: 'Green', swatch: '#22c55e', group: 'warm' },
-  { value: 'amber', label: 'Amber', swatch: '#f59e0b', group: 'warm' },
-  { value: 'emerald', label: 'Emerald', swatch: '#10b981', group: 'cool' },
-  { value: 'blue', label: 'Blue', swatch: '#3b82f6', group: 'cool' },
-  { value: 'fuchsia', label: 'Fuchsia', swatch: '#d946ef', group: 'cool' },
-  { value: 'purple', label: 'Purple', swatch: '#a855f7', group: 'cool' },
-  { value: 'violet', label: 'Violet', swatch: '#8b5cf6', group: 'cool' },
-]
 
 const NEUTRAL_FAMILIES = [
   'neutral',
@@ -99,7 +24,6 @@ const NEUTRAL_FAMILIES = [
   'gray',
   'mauve',
   'olive',
-  'mist',
   'taupe',
 ] as const
 
@@ -122,7 +46,7 @@ const getColorScale = (family: SchemeColor | 'red') =>
 const getBaseFamily = (family: SchemeColor) =>
   NEUTRAL_FAMILIES.includes(family as (typeof NEUTRAL_FAMILIES)[number])
     ? family
-    : 'zinc'
+    : 'neutral'
 
 const buildPalettePreset = (
   family: SchemeColor
@@ -139,7 +63,7 @@ const buildPalettePreset = (
     light: {
       background: base['50'],
       foreground: base['950'],
-      card: base['50'],
+      card: base['100'],
       'card-foreground': base['950'],
       popover: base['50'],
       'popover-foreground': base['950'],
@@ -250,7 +174,7 @@ const SCHEME_COLOR_PRESETS: Record<
   gray: buildPalettePreset('gray'),
   mauve: buildPalettePreset('mauve'),
   olive: buildPalettePreset('olive'),
-  mist: buildPalettePreset('mist'),
+  mist: buildPalettePreset('cyan'),
   taupe: buildPalettePreset('taupe'),
   red: buildPalettePreset('red'),
   orange: buildPalettePreset('orange'),
@@ -271,11 +195,34 @@ const SCHEME_COLOR_PRESETS: Record<
   rose: buildPalettePreset('rose'),
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const getSchemeColorPreset = (
   schemeColor: SchemeColor,
   resolvedTheme: ResolvedTheme
 ) => SCHEME_COLOR_PRESETS[schemeColor][resolvedTheme]
 const CUSTOM_COLOR_KEYS = PRESET_COLOR_KEYS
+
+const THEMES: Theme[] = ['dark', 'light', 'system']
+const SCHEME_COLORS = Object.keys(SCHEME_COLOR_PRESETS) as SchemeColor[]
+
+const isTheme = (value: string | undefined): value is Theme =>
+  THEMES.includes(value as Theme)
+
+const isSchemeColor = (value: string | undefined): value is SchemeColor =>
+  SCHEME_COLORS.includes(value as SchemeColor)
+
+const sanitizeCustomColors = (value: unknown): CustomColors => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+
+  const entries = Object.entries(value).filter(
+    (entry): entry is [CustomColorKey, string] =>
+      CUSTOM_COLOR_KEYS.includes(entry[0] as CustomColorKey) &&
+      typeof entry[1] === 'string' &&
+      entry[1].trim().length > 0
+  )
+
+  return Object.fromEntries(entries) as CustomColors
+}
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -297,21 +244,7 @@ type ThemeProviderState = {
   resetTheme: () => void
 }
 
-const initialState: ThemeProviderState = {
-  defaultTheme: DEFAULT_THEME,
-  defaultSchemeColor: DEFAULT_SCHEME_COLOR,
-  customColors: {},
-  resolvedTheme: 'light',
-  schemeColor: DEFAULT_SCHEME_COLOR,
-  setCustomColor: () => null,
-  theme: DEFAULT_THEME,
-  setTheme: () => null,
-  setSchemeColor: () => null,
-  resetCustomColors: () => null,
-  resetTheme: () => null,
-}
-
-const ThemeContext = createContext<ThemeProviderState>(initialState)
+const ThemeContext = createContext<ThemeProviderState | null>(null)
 
 export function ThemeProvider({
   children,
@@ -319,21 +252,23 @@ export function ThemeProvider({
   storageKey = THEME_COOKIE_NAME,
   ...props
 }: ThemeProviderProps) {
-  const [theme, _setTheme] = useState<Theme>(
-    () => (getCookie(storageKey) as Theme) || defaultTheme
-  )
-  const [schemeColor, _setSchemeColor] = useState<SchemeColor>(
-    () =>
-      (getCookie(SCHEME_COLOR_COOKIE_NAME) as SchemeColor) ||
-      DEFAULT_SCHEME_COLOR
-  )
+  const [theme, _setTheme] = useState<Theme>(() => {
+    const storedTheme = getCookie(storageKey)
+    return isTheme(storedTheme) ? storedTheme : defaultTheme
+  })
+  const [schemeColor, _setSchemeColor] = useState<SchemeColor>(() => {
+    const storedSchemeColor = getCookie(SCHEME_COLOR_COOKIE_NAME)
+    return isSchemeColor(storedSchemeColor)
+      ? storedSchemeColor
+      : DEFAULT_SCHEME_COLOR
+  })
   const [customColors, _setCustomColors] = useState<CustomColors>(() => {
     const stored = getCookie(CUSTOM_COLORS_COOKIE_NAME)
 
     if (!stored) return {}
 
     try {
-      return JSON.parse(stored) as CustomColors
+      return sanitizeCustomColors(JSON.parse(stored))
     } catch {
       return {}
     }
@@ -394,11 +329,7 @@ export function ThemeProvider({
   }
 
   const setSchemeColor = (schemeColor: SchemeColor) => {
-    setCookie(
-      SCHEME_COLOR_COOKIE_NAME,
-      schemeColor,
-      THEME_COOKIE_MAX_AGE
-    )
+    setCookie(SCHEME_COLOR_COOKIE_NAME, schemeColor, THEME_COOKIE_MAX_AGE)
     _setSchemeColor(schemeColor)
   }
 
