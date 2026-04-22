@@ -40,7 +40,7 @@ export function Settings() {
         <TopNav links={settingsNav} />
       </AppHeaderSlot>
 
-      <Main fixed>
+      <Main>
         <div className='space-y-0.5'>
           <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
             Settings
@@ -50,7 +50,7 @@ export function Settings() {
           </p>
         </div>
         <Separator className='my-4 lg:my-6' />
-        <div className='flex w-full flex-1 overflow-y-hidden p-1'>
+        <div className='w-full p-1'>
           <Outlet />
         </div>
       </Main>

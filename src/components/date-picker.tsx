@@ -1,5 +1,7 @@
+import * as React from 'react'
 import { format } from 'date-fns'
 import { Calendar as CalendarIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -8,24 +10,37 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 
-type DatePickerProps = {
+type DatePickerProps = Omit<
+  React.ComponentProps<typeof Button>,
+  'children' | 'onSelect'
+> & {
   selected: Date | undefined
   onSelect: (date: Date | undefined) => void
   placeholder?: string
 }
 
 export function DatePicker({
+  className,
+  ref,
   selected,
   onSelect,
   placeholder = 'Pick a date',
+  type,
+  ...props
 }: DatePickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
+          ref={ref}
+          type={type ?? 'button'}
           variant='outline'
           data-empty={!selected}
-          className='w-[240px] justify-start text-start font-normal data-[empty=true]:text-muted-foreground'
+          className={cn(
+            'w-[240px] justify-start text-start font-normal data-[empty=true]:text-muted-foreground',
+            className
+          )}
+          {...props}
         >
           {selected ? (
             format(selected, 'MMM d, yyyy')

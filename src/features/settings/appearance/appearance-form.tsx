@@ -1,14 +1,19 @@
+import { useEffect, useId, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { fonts } from '@/config/fonts'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { IconThemeDark } from '@/assets/custom/icon-theme-dark'
+import { IconThemeLight } from '@/assets/custom/icon-theme-light'
+import { IconThemeSystem } from '@/assets/custom/icon-theme-system'
 import { showSubmittedData } from '@/lib/show-submitted-data'
 import { cn } from '@/lib/utils'
 import { useFont } from '@/context/font-provider'
 import { SCHEME_COLOR_OPTIONS } from '@/context/theme-constants'
-import { useTheme } from '@/context/theme-provider'
-import type { SchemeColor } from '@/context/theme-types'
+import { getSchemeColorPreset, useTheme } from '@/context/theme-provider'
+import type { CustomColorKey, SchemeColor } from '@/context/theme-types'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Form,
@@ -19,26 +24,104 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { RadioGroup } from '@/components/ui/radio-group'
+import { PreviewRadioGroupItem } from '@/components/config-drawer/preview-radio-group'
+import { PalettePreview } from '@/components/config-drawer/scheme-color-config'
+import { COLOR_GROUPS, COLOR_GROUP_VALUES } from './theme-color-groups'
 import { ThemeColorCustomizer } from './theme-color-customizer'
 
 const appearanceFormSchema = z.object({
   theme: z.enum(['system', 'light', 'dark']),
   font: z.enum(fonts),
   schemeColor: z.string(),
+  group: z.enum(COLOR_GROUP_VALUES),
 })
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
+const getPalettePageSize = () => {
+  if (typeof window === 'undefined') return 7
+  if (window.innerWidth >= 1536) return 7
+  if (window.innerWidth >= 1280) return 6
+  if (window.innerWidth >= 1024) return 5
+  if (window.innerWidth >= 768) return 4
+  if (window.innerWidth >= 640) return 3
+  if (window.innerWidth >= 480) return 2
+
+  return 1
+}
+
+const getPaletteStart = (schemeColor: string, pageSize: number) => {
+  const selectedIndex = SCHEME_COLOR_OPTIONS.findIndex(
+    (option) => option.value === schemeColor
+  )
+  const safeIndex = selectedIndex >= 0 ? selectedIndex : 0
+
+  return Math.floor(safeIndex / pageSize) * pageSize
+}
+
+const themeOptions = [
+  {
+    value: 'system',
+    label: 'System',
+    icon: IconThemeSystem,
+  },
+  {
+    value: 'light',
+    label: 'Light',
+    icon: IconThemeLight,
+  },
+  {
+    value: 'dark',
+    label: 'Dark',
+    icon: IconThemeDark,
+  },
+] as const
+
 export function AppearanceForm() {
   const { font, setFont } = useFont()
-  const { theme, setTheme, schemeColor, setSchemeColor } = useTheme()
+  const {
+    customColors,
+    resolvedTheme,
+    theme,
+    setTheme,
+    schemeColor,
+    setSchemeColor,
+  } = useTheme()
+  const themeGroupLabelId = useId()
+  const schemeColorGroupLabelId = useId()
+  const [palettePageSize, setPalettePageSize] = useState(getPalettePageSize)
+  const [paletteStart, setPaletteStart] = useState(() =>
+    getPaletteStart(schemeColor, getPalettePageSize())
+  )
+  const paletteCount = SCHEME_COLOR_OPTIONS.length
+  const visiblePaletteOptions = Array.from(
+    { length: palettePageSize },
+    (_, offset) => SCHEME_COLOR_OPTIONS[(paletteStart + offset) % paletteCount]
+  )
+
+  useEffect(() => {
+    const handleResize = () => {
+      const nextPageSize = getPalettePageSize()
+
+      setPalettePageSize(nextPageSize)
+      setPaletteStart(
+        (current) => Math.floor(current / nextPageSize) * nextPageSize
+      )
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // This can come from your database or API.
   const defaultValues: Partial<AppearanceFormValues> = {
     theme,
     font,
     schemeColor,
+    group: 'primary',
   }
 
   const form = useForm<AppearanceFormValues>({
@@ -52,7 +135,32 @@ export function AppearanceForm() {
     if (data.schemeColor != schemeColor)
       setSchemeColor(data.schemeColor as SchemeColor)
 
-    showSubmittedData(data)
+    const palettePreset = getSchemeColorPreset(
+      data.schemeColor as SchemeColor,
+      resolvedTheme
+    )
+    const group = [
+      Object.fromEntries(
+        COLOR_GROUPS.map((colorGroup) => [
+          colorGroup.label,
+          Object.fromEntries(
+            colorGroup.fields.map((field) => {
+              const key = field.key as CustomColorKey
+
+              return [
+                field.label,
+                customColors[key] ?? palettePreset[key] ?? '',
+              ]
+            })
+          ),
+        ])
+      ),
+    ]
+
+    showSubmittedData({
+      ...data,
+      group,
+    })
   }
 
   return (
@@ -64,12 +172,16 @@ export function AppearanceForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Font</FormLabel>
+              <FormDescription className='font-manrope'>
+                Set the font you want to use in the dashboard.
+              </FormDescription>
+              <FormMessage />
               <div className='relative w-max'>
                 <FormControl>
                   <select
                     className={cn(
                       buttonVariants({ variant: 'outline' }),
-                      'w-[200px] appearance-none font-normal capitalize',
+                      'w-50 appearance-none font-normal capitalize',
                       'dark:bg-background dark:hover:bg-background'
                     )}
                     {...field}
@@ -83,10 +195,6 @@ export function AppearanceForm() {
                 </FormControl>
                 <ChevronDownIcon className='absolute inset-e-3 top-2.5 h-4 w-4 opacity-50' />
               </div>
-              <FormDescription className='font-manrope'>
-                Set the font you want to use in the dashboard.
-              </FormDescription>
-              <FormMessage />
             </FormItem>
           )}
         />
@@ -95,102 +203,25 @@ export function AppearanceForm() {
           name='theme'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Theme</FormLabel>
+              <div
+                id={themeGroupLabelId}
+                className='text-sm leading-none font-medium'
+              >
+                Theme
+              </div>
               <FormDescription>
                 Select the theme for the dashboard.
               </FormDescription>
               <FormMessage />
               <RadioGroup
+                aria-labelledby={themeGroupLabelId}
                 onValueChange={field.onChange}
-                defaultValue={field.value}
-                className='grid max-w-2xl gap-6 pt-2 sm:grid-cols-3'
+                value={field.value}
+                className='grid w-full max-w-md grid-cols-3 gap-4 pt-2'
               >
-                <FormItem>
-                  <FormLabel className='[&:has([data-state=checked])>div]:border-primary'>
-                    <FormControl>
-                      <RadioGroupItem value='system' className='sr-only' />
-                    </FormControl>
-                    <div className='items-center rounded-md border-2 border-muted p-1 hover:border-accent'>
-                      <div className='grid grid-cols-2 overflow-hidden rounded-sm'>
-                        <div className='space-y-2 bg-[#ecedef] p-2'>
-                          <div className='space-y-2 rounded-md bg-white p-2 shadow-xs'>
-                            <div className='h-2 w-[56px] rounded-lg bg-[#ecedef]' />
-                            <div className='h-2 w-[72px] rounded-lg bg-[#ecedef]' />
-                          </div>
-                          <div className='flex items-center space-x-2 rounded-md bg-white p-2 shadow-xs'>
-                            <div className='h-4 w-4 rounded-full bg-[#ecedef]' />
-                            <div className='h-2 w-[56px] rounded-lg bg-[#ecedef]' />
-                          </div>
-                        </div>
-                        <div className='space-y-2 bg-slate-950 p-2'>
-                          <div className='space-y-2 rounded-md bg-slate-800 p-2 shadow-xs'>
-                            <div className='h-2 w-[56px] rounded-lg bg-slate-400' />
-                            <div className='h-2 w-[72px] rounded-lg bg-slate-400' />
-                          </div>
-                          <div className='flex items-center space-x-2 rounded-md bg-slate-800 p-2 shadow-xs'>
-                            <div className='h-4 w-4 rounded-full bg-slate-400' />
-                            <div className='h-2 w-[56px] rounded-lg bg-slate-400' />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <span className='block w-full p-2 text-center font-normal'>
-                      System
-                    </span>
-                  </FormLabel>
-                </FormItem>
-                <FormItem>
-                  <FormLabel className='[&:has([data-state=checked])>div]:border-primary'>
-                    <FormControl>
-                      <RadioGroupItem value='light' className='sr-only' />
-                    </FormControl>
-                    <div className='items-center rounded-md border-2 border-muted p-1 hover:border-accent'>
-                      <div className='space-y-2 rounded-sm bg-[#ecedef] p-2'>
-                        <div className='space-y-2 rounded-md bg-white p-2 shadow-xs'>
-                          <div className='h-2 w-[80px] rounded-lg bg-[#ecedef]' />
-                          <div className='h-2 w-[100px] rounded-lg bg-[#ecedef]' />
-                        </div>
-                        <div className='flex items-center space-x-2 rounded-md bg-white p-2 shadow-xs'>
-                          <div className='h-4 w-4 rounded-full bg-[#ecedef]' />
-                          <div className='h-2 w-[100px] rounded-lg bg-[#ecedef]' />
-                        </div>
-                        <div className='flex items-center space-x-2 rounded-md bg-white p-2 shadow-xs'>
-                          <div className='h-4 w-4 rounded-full bg-[#ecedef]' />
-                          <div className='h-2 w-[100px] rounded-lg bg-[#ecedef]' />
-                        </div>
-                      </div>
-                    </div>
-                    <span className='block w-full p-2 text-center font-normal'>
-                      Light
-                    </span>
-                  </FormLabel>
-                </FormItem>
-                <FormItem>
-                  <FormLabel className='[&:has([data-state=checked])>div]:border-primary'>
-                    <FormControl>
-                      <RadioGroupItem value='dark' className='sr-only' />
-                    </FormControl>
-                    <div className='items-center rounded-md border-2 border-muted bg-popover p-1 hover:bg-accent hover:text-accent-foreground'>
-                      <div className='space-y-2 rounded-sm bg-slate-950 p-2'>
-                        <div className='space-y-2 rounded-md bg-slate-800 p-2 shadow-xs'>
-                          <div className='h-2 w-[80px] rounded-lg bg-slate-400' />
-                          <div className='h-2 w-[100px] rounded-lg bg-slate-400' />
-                        </div>
-                        <div className='flex items-center space-x-2 rounded-md bg-slate-800 p-2 shadow-xs'>
-                          <div className='h-4 w-4 rounded-full bg-slate-400' />
-                          <div className='h-2 w-[100px] rounded-lg bg-slate-400' />
-                        </div>
-                        <div className='flex items-center space-x-2 rounded-md bg-slate-800 p-2 shadow-xs'>
-                          <div className='h-4 w-4 rounded-full bg-slate-400' />
-                          <div className='h-2 w-[100px] rounded-lg bg-slate-400' />
-                        </div>
-                      </div>
-                    </div>
-                    <span className='block w-full p-2 text-center font-normal'>
-                      Dark
-                    </span>
-                  </FormLabel>
-                </FormItem>
+                {themeOptions.map((option) => (
+                  <PreviewRadioGroupItem key={option.value} item={option} />
+                ))}
               </RadioGroup>
             </FormItem>
           )}
@@ -200,35 +231,96 @@ export function AppearanceForm() {
           name='schemeColor'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Color Scheme</FormLabel>
-              <div className='relative w-max'>
-                <FormControl>
-                  <select
-                    className={cn(
-                      buttonVariants({ variant: 'outline' }),
-                      'w-[200px] appearance-none font-normal capitalize',
-                      'dark:bg-background dark:hover:bg-background'
-                    )}
-                    {...field}
-                  >
-                    {SCHEME_COLOR_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </FormControl>
-                <ChevronDownIcon className='absolute inset-e-3 top-2.5 h-4 w-4 opacity-50' />
+              <div
+                id={schemeColorGroupLabelId}
+                className='text-sm leading-none font-medium'
+              >
+                Color Scheme
               </div>
               <FormDescription className='font-manrope'>
                 Choose the color scheme for the dashboard.
               </FormDescription>
               <FormMessage />
+              <div
+                className='relative w-full px-10 pt-2'
+                role='radiogroup'
+                aria-labelledby={schemeColorGroupLabelId}
+              >
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='absolute top-1/2 left-0 z-10 size-8 -translate-y-1/2 rounded-full bg-background'
+                  aria-label='Previous color palettes'
+                  onClick={() =>
+                    setPaletteStart(
+                      (current) =>
+                        (current - palettePageSize + paletteCount) %
+                        paletteCount
+                    )
+                  }
+                >
+                  <ChevronLeft className='size-4' />
+                </Button>
+                <div className='grid auto-cols-[156px] grid-flow-col gap-4 pt-3 [&>button]:w-[156px] [&>button>div:first-child]:h-[100px] [&>button>div:first-child]:w-[156px]'>
+                  {visiblePaletteOptions.map((option) => {
+                    const isSelected = option.value === field.value
+
+                    return (
+                      <button
+                        key={option.value}
+                        type='button'
+                        role='radio'
+                        aria-checked={isSelected}
+                        className={cn(
+                          'group rounded-[6px] text-start transition duration-200 ease-in outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                          isSelected && '[&>div:first-child]:ring-primary'
+                        )}
+                        onClick={() => field.onChange(option.value)}
+                      >
+                        <PalettePreview
+                          color={option.swatch}
+                          selected={isSelected}
+                        />
+                        <div
+                          className='mt-1 text-center text-xs font-medium'
+                          style={{ color: option.swatch }}
+                        >
+                          {option.label}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='icon'
+                  className='absolute top-1/2 right-0 z-10 size-8 -translate-y-1/2 rounded-full bg-background'
+                  aria-label='Next color palettes'
+                  onClick={() =>
+                    setPaletteStart(
+                      (current) => (current + palettePageSize) % paletteCount
+                    )
+                  }
+                >
+                  <ChevronRight className='size-4' />
+                </Button>
+              </div>
             </FormItem>
           )}
         />
 
-        <ThemeColorCustomizer />
+        <FormField
+          control={form.control}
+          name='group'
+          render={({ field }) => (
+            <ThemeColorCustomizer
+              selectedGroup={field.value}
+              onSelectedGroupChange={field.onChange}
+            />
+          )}
+        />
 
         <Button type='submit'>Update preferences</Button>
       </form>

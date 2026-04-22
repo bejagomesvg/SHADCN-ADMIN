@@ -59,7 +59,10 @@ export function TopNav({ className, links, ...props }: TopNavProps) {
             key={`${title}-${href}`}
             to={href}
             disabled={disabled}
-            className={`text-sm font-medium transition-colors hover:text-primary ${isActive ? '' : 'text-muted-foreground'}`}
+            className={cn(
+              'text-sm font-medium transition-colors outline-none hover:text-primary focus-visible:rounded-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
+              !isActive && 'text-muted-foreground'
+            )}
           >
             {title}
           </Link>

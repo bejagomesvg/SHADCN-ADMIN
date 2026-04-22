@@ -17,7 +17,7 @@ const getPaletteStart = (schemeColor: string) => {
   return Math.floor(safeIndex / PALETTE_PAGE_SIZE) * PALETTE_PAGE_SIZE
 }
 
-function PalettePreview({
+export function PalettePreview({
   color,
   selected,
 }: {
@@ -28,7 +28,7 @@ function PalettePreview({
     <div
       className={cn(
         'relative h-16 overflow-visible rounded-[6px] ring-1 ring-border transition duration-200 ease-in',
-        selected && 'shadow-2xl ring-primary'
+        selected && 'ring-primary'
       )}
     >
       <CircleCheck
