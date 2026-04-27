@@ -45,12 +45,21 @@ export function ContentSection({
       <div ref={sentinelRef} className='absolute top-0 h-px w-full' />
       <div
         className={cn(
-          'sticky top-12 z-10 flex-none pb-3 transition-all duration-200 md:top-16',
+          'sticky top-12 z-10 flex-none py-3 md:top-16',
           isStuck && 'bg-background/20 shadow backdrop-blur-lg'
         )}
       >
-        <h3 className='text-lg font-medium'>{title}</h3>
-        <p className='text-sm text-muted-foreground'>{desc}</p>
+        <h3 className={cn('text-lg font-medium', isStuck && 'text-primary')}>
+          {title}
+        </h3>
+        <p
+          className={cn(
+            'text-sm text-muted-foreground',
+            isStuck && 'text-accent-foreground'
+          )}
+        >
+          {desc}
+        </p>
       </div>
       <Separator />
       <div className='w-full scroll-smooth pe-4 pt-4'>

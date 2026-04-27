@@ -118,7 +118,7 @@ export function AccountForm() {
                       variant='outline'
                       role='combobox'
                       className={cn(
-                        'w-[200px] justify-between',
+                        'w-50 justify-between',
                         !field.value && 'text-muted-foreground'
                       )}
                     >
@@ -131,7 +131,7 @@ export function AccountForm() {
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className='w-[200px] p-0'>
+                <PopoverContent className='w-50 p-0'>
                   <Command>
                     <CommandInput placeholder='Search language...' />
                     <CommandEmpty>No language found.</CommandEmpty>
