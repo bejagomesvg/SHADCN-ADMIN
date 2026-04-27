@@ -18,49 +18,101 @@ export function ContentSection({
   children,
 }: ContentSectionProps) {
   const [isStuck, setIsStuck] = React.useState(false)
+  const [stuckStyle, setStuckStyle] = React.useState<React.CSSProperties>({})
   const sentinelRef = React.useRef<HTMLDivElement>(null)
+  const headerRef = React.useRef<HTMLDivElement>(null)
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const isStuckRef = React.useRef(false)
+
+  const getSidebarInset = React.useCallback((): Element | null => {
+    let el: Element | null = containerRef.current
+    while (el && el.getAttribute('data-slot') !== 'sidebar-inset') {
+      el = el.parentElement
+    }
+    return el
+  }, [])
+
+  const computeStuckStyle = React.useCallback(() => {
+    if (!containerRef.current) return
+    const inset = getSidebarInset()
+    if (!inset) return
+
+    const insetRect = inset.getBoundingClientRect()
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const offsetLeft = containerRect.left - insetRect.left
+
+    setStuckStyle({
+      marginInlineStart: `-${offsetLeft}px`,
+      width: `${insetRect.width}px`,
+      paddingInline: `${offsetLeft}px`,
+    })
+  }, [getSidebarInset])
 
   React.useEffect(() => {
-    // Se não estiver no modo fixo, apenas encerramos o efeito sem mexer no estado aqui
     if (!fixed) return
 
-    // Verifica se é desktop para alinhar o rootMargin com md:top-16 (64px) ou top-12 (48px)
-    const isDesktop = window.matchMedia('(min-width: 768px)').matches
-    const offset = isDesktop ? '64px' : '48px'
+    const mq = window.matchMedia('(min-width: 768px)')
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // Se o sentinela não estiver intersectando, significa que rolamos a página
-        // e o cabeçalho atingiu a posição sticky
-        setIsStuck(!entry.isIntersecting)
-      },
-      {
-        // rootMargin dinâmico para compensar a altura exata da navbar
-        rootMargin: `-${offset} 0px 0px 0px`,
-        threshold: [0],
-      }
-    )
+    const createObserver = () => {
+      const offset = mq.matches ? '64px' : '48px'
 
-    if (sentinelRef.current) observer.observe(sentinelRef.current)
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          const stuck = !entry.isIntersecting
+          isStuckRef.current = stuck
+          setIsStuck(stuck)
+          if (stuck) computeStuckStyle()
+          else setStuckStyle({})
+        },
+        { rootMargin: `-${offset} 0px 0px 0px`, threshold: [0] }
+      )
+
+      if (sentinelRef.current) observer.observe(sentinelRef.current)
+      return observer
+    }
+
+    let observer = createObserver()
+
+    const onBreakpoint = () => {
+      observer.disconnect()
+      observer = createObserver()
+    }
+
+    mq.addEventListener('change', onBreakpoint)
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (isStuckRef.current) computeStuckStyle()
+    })
+
+    const inset = getSidebarInset()
+    if (inset) {
+      resizeObserver.observe(inset)
+    } else {
+      resizeObserver.observe(document.documentElement)
+    }
 
     return () => {
       observer.disconnect()
-      setIsStuck(false) // O reset acontece de forma segura na desmontagem ou mudança de prop
+      mq.removeEventListener('change', onBreakpoint)
+      resizeObserver.disconnect()
+      isStuckRef.current = false
+      setIsStuck(false)
+      setStuckStyle({})
     }
-  }, [fixed])
+  }, [fixed, computeStuckStyle, getSidebarInset])
 
   return (
-    <div className='relative flex w-full scroll-mt-16 flex-col'>
+    <div ref={containerRef} className='relative flex w-full scroll-mt-16 flex-col'>
       {fixed && (
         <div ref={sentinelRef} className='absolute top-0 h-px w-full' />
       )}
       <div
+        ref={headerRef}
+        style={fixed && isStuck ? stuckStyle : undefined}
         className={cn(
-          'relative flex-none py-3',
-          fixed && 'sticky top-12 z-20 md:top-16',
-          fixed &&
-            isStuck &&
-            'w-full px-4 shadow after:absolute after:inset-0 after:-z-10 after:bg-background/20 after:backdrop-blur-lg sm:-ml-4 sm:w-screen sm:px-4 md:-ml-6 md:px-6'
+          'flex-none py-3',
+          fixed && 'sticky top-12 z-10 md:top-16',
+          fixed && isStuck && 'bg-background/80 shadow backdrop-blur supports-backdrop-filter:bg-background/60'
         )}
       >
         <h3
@@ -81,20 +133,8 @@ export function ContentSection({
         </p>
       </div>
       <Separator />
-      <div
-        className={cn(
-          'scroll-smooth pt-4',
-          !isStuck && 'w-full pe-4',
-          isStuck && 'w-full px-4 sm:-ml-4 sm:w-screen sm:px-4 md:-ml-6 md:px-6'
-        )}
-      >
-        <div
-          className={cn(
-            !isStuck && '-mx-1 px-1.5',
-            !isStuck && 'lg:max-w-xl',
-            contentClassName
-          )}
-        >
+      <div className='w-full scroll-smooth pe-4 pt-4'>
+        <div className={cn('-mx-1 px-1.5 lg:max-w-xl', contentClassName)}>
           {children}
         </div>
       </div>
