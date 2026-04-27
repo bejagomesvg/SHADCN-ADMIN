@@ -42,14 +42,14 @@ export function Settings() {
 
       <Main>
         <div className='space-y-0.5'>
-          <h1 className='text-2xl font-bold tracking-tight md:text-3xl'>
+          <h1 className='text-2xl font-bold tracking-tight text-primary md:text-3xl'>
             Settings
           </h1>
           <p className='text-muted-foreground'>
             Manage your account settings and set e-mail preferences.
           </p>
         </div>
-        <Separator className='my-4 lg:my-6' />
+        <Separator className='my-3' />
         <div className='w-full p-1'>
           <Outlet />
         </div>

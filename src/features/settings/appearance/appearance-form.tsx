@@ -27,8 +27,8 @@ import {
 import { RadioGroup } from '@/components/ui/radio-group'
 import { PreviewRadioGroupItem } from '@/components/config-drawer/preview-radio-group'
 import { PalettePreview } from '@/components/config-drawer/scheme-color-config'
-import { COLOR_GROUPS, COLOR_GROUP_VALUES } from './theme-color-groups'
 import { ThemeColorCustomizer } from './theme-color-customizer'
+import { COLOR_GROUPS, COLOR_GROUP_VALUES } from './theme-color-groups'
 
 const appearanceFormSchema = z.object({
   theme: z.enum(['system', 'light', 'dark']),
@@ -262,7 +262,7 @@ export function AppearanceForm() {
                 >
                   <ChevronLeft className='size-4' />
                 </Button>
-                <div className='grid auto-cols-[156px] grid-flow-col gap-4 pt-3 [&>button]:w-[156px] [&>button>div:first-child]:h-[100px] [&>button>div:first-child]:w-[156px]'>
+                <div className='grid auto-cols-[156px] grid-flow-col gap-4 pt-3 [&>button]:w-39 [&>button>div:first-child]:h-25 [&>button>div:first-child]:w-39'>
                   {visiblePaletteOptions.map((option) => {
                     const isSelected = option.value === field.value
 
