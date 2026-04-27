@@ -56,9 +56,11 @@ export function ContentSection({
       )}
       <div
         className={cn(
-          'flex-none py-3',
+          'relative flex-none py-3',
           fixed && 'sticky top-12 z-20 md:top-16',
-          fixed && isStuck && 'bg-background/20 shadow backdrop-blur-lg'
+          fixed &&
+            isStuck &&
+            'w-full px-4 shadow after:absolute after:inset-0 after:-z-10 after:bg-background/20 after:backdrop-blur-lg sm:-ml-4 sm:w-screen sm:px-4 md:-ml-6 md:px-6'
         )}
       >
         <h3
@@ -79,8 +81,20 @@ export function ContentSection({
         </p>
       </div>
       <Separator />
-      <div className='w-full scroll-smooth pe-4 pt-4'>
-        <div className={cn('-mx-1 px-1.5 lg:max-w-xl', contentClassName)}>
+      <div
+        className={cn(
+          'scroll-smooth pt-4',
+          !isStuck && 'w-full pe-4',
+          isStuck && 'w-full px-4 sm:-ml-4 sm:w-screen sm:px-4 md:-ml-6 md:px-6'
+        )}
+      >
+        <div
+          className={cn(
+            !isStuck && '-mx-1 px-1.5',
+            !isStuck && 'lg:max-w-xl',
+            contentClassName
+          )}
+        >
           {children}
         </div>
       </div>
