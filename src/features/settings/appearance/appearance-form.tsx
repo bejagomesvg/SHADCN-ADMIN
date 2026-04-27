@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { z } from 'zod'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { fonts } from '@/config/fonts'
@@ -136,23 +136,12 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
     defaultValues,
   })
 
-  // Monitora o switch e avisa o componente pai imediatamente
-  const fixedHeader = useWatch({
-    control: form.control,
-    name: 'fixedHeader',
-  })
-
-  useEffect(() => {
-    if (typeof fixedHeader === 'boolean') {
-      onFixedHeaderChange?.(fixedHeader)
-    }
-  }, [fixedHeader, onFixedHeaderChange])
-
   function onSubmit(data: AppearanceFormValues) {
     if (data.font != font) setFont(data.font)
     if (data.theme != theme) setTheme(data.theme)
     if (data.schemeColor != schemeColor)
       setSchemeColor(data.schemeColor as SchemeColor)
+    onFixedHeaderChange?.(data.fixedHeader)
 
     const palettePreset = getSchemeColorPreset(
       data.schemeColor as SchemeColor,
@@ -185,7 +174,7 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-        <div className='grid grid-cols-1 items-end gap-4'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start'>
           <FormField
             control={form.control}
             name='font'
@@ -223,19 +212,19 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
             name='fixedHeader'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Fixed Header</FormLabel>
+                <FormLabel>Fixed Subheader</FormLabel>
                 <FormDescription className='font-manrope'>
-                  Fixar cabeçalho ao rolar.
+                  Fix subheader when scrolling.
                 </FormDescription>
                 <FormMessage />
-                <FormControl>
-                  <div className='relative w-max'>
+                <div className='relative w-max'>
+                  <FormControl>
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
                     />
-                  </div>
-                </FormControl>
+                  </FormControl>
+                </div>
               </FormItem>
             )}
           />

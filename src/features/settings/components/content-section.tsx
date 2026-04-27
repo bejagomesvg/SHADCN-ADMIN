@@ -56,7 +56,7 @@ export function ContentSection({
       )}
       <div
         className={cn(
-          'flex-none px-4 py-3',
+          'flex-none py-3',
           fixed && 'sticky top-12 z-10 md:top-16',
           fixed && isStuck && 'bg-background/20 shadow backdrop-blur-lg'
         )}
@@ -72,7 +72,7 @@ export function ContentSection({
         <p
           className={cn(
             'text-sm text-muted-foreground',
-            fixed && isStuck && 'text-secondary'
+            fixed && isStuck && 'text-accent-foreground'
           )}
         >
           {desc}
