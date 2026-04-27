@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { z } from 'zod'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { ChevronDownIcon } from '@radix-ui/react-icons'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { fonts } from '@/config/fonts'
@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { RadioGroup } from '@/components/ui/radio-group'
+import { Switch } from '@/components/ui/switch'
 import { PreviewRadioGroupItem } from '@/components/config-drawer/preview-radio-group'
 import { PalettePreview } from '@/components/config-drawer/scheme-color-config'
 import { ThemeColorCustomizer } from './theme-color-customizer'
@@ -35,6 +36,7 @@ const appearanceFormSchema = z.object({
   font: z.enum(fonts),
   schemeColor: z.string(),
   group: z.enum(COLOR_GROUP_VALUES),
+  fixedHeader: z.boolean(),
 })
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
@@ -78,7 +80,11 @@ const themeOptions = [
   },
 ] as const
 
-export function AppearanceForm() {
+interface AppearanceFormProps {
+  onFixedHeaderChange?: (fixed: boolean) => void
+}
+
+export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
   const { font, setFont } = useFont()
   const {
     customColors,
@@ -122,12 +128,25 @@ export function AppearanceForm() {
     font,
     schemeColor,
     group: 'primary',
+    fixedHeader: true,
   }
 
   const form = useForm<AppearanceFormValues>({
     resolver: zodResolver(appearanceFormSchema),
     defaultValues,
   })
+
+  // Monitora o switch e avisa o componente pai imediatamente
+  const fixedHeader = useWatch({
+    control: form.control,
+    name: 'fixedHeader',
+  })
+
+  useEffect(() => {
+    if (typeof fixedHeader === 'boolean') {
+      onFixedHeaderChange?.(fixedHeader)
+    }
+  }, [fixedHeader, onFixedHeaderChange])
 
   function onSubmit(data: AppearanceFormValues) {
     if (data.font != font) setFont(data.font)
@@ -166,38 +185,61 @@ export function AppearanceForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-        <FormField
-          control={form.control}
-          name='font'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Font</FormLabel>
-              <FormDescription className='font-manrope'>
-                Set the font you want to use in the dashboard.
-              </FormDescription>
-              <FormMessage />
-              <div className='relative w-max'>
+        <div className='grid grid-cols-1 items-end gap-4'>
+          <FormField
+            control={form.control}
+            name='font'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Font</FormLabel>
+                <FormDescription className='font-manrope'>
+                  Set the font you want to use in the dashboard.
+                </FormDescription>
+                <FormMessage />
+                <div className='relative w-max'>
+                  <FormControl>
+                    <select
+                      className={cn(
+                        buttonVariants({ variant: 'outline' }),
+                        'w-50 appearance-none font-normal capitalize',
+                        'dark:bg-background dark:hover:bg-background'
+                      )}
+                      {...field}
+                    >
+                      {fonts.map((font) => (
+                        <option key={font} value={font}>
+                          {font}
+                        </option>
+                      ))}
+                    </select>
+                  </FormControl>
+                  <ChevronDownIcon className='absolute inset-e-3 top-2.5 h-4 w-4 opacity-50' />
+                </div>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='fixedHeader'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fixed Header</FormLabel>
+                <FormDescription className='font-manrope'>
+                  Fixar cabeçalho ao rolar.
+                </FormDescription>
+                <FormMessage />
                 <FormControl>
-                  <select
-                    className={cn(
-                      buttonVariants({ variant: 'outline' }),
-                      'w-50 appearance-none font-normal capitalize',
-                      'dark:bg-background dark:hover:bg-background'
-                    )}
-                    {...field}
-                  >
-                    {fonts.map((font) => (
-                      <option key={font} value={font}>
-                        {font}
-                      </option>
-                    ))}
-                  </select>
+                  <div className='relative w-max'>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </div>
                 </FormControl>
-                <ChevronDownIcon className='absolute inset-e-3 top-2.5 h-4 w-4 opacity-50' />
-              </div>
-            </FormItem>
-          )}
-        />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={form.control}
           name='theme'

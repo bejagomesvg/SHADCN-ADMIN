@@ -6,12 +6,14 @@ type ContentSectionProps = {
   title: string
   desc: string
   contentClassName?: string
+  fixed?: boolean
   children: React.ReactNode
 }
 
 export function ContentSection({
   title,
   desc,
+  fixed = true,
   contentClassName,
   children,
 }: ContentSectionProps) {
@@ -19,6 +21,9 @@ export function ContentSection({
   const sentinelRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
+    // Se não estiver no modo fixo, apenas encerramos o efeito sem mexer no estado aqui
+    if (!fixed) return
+
     // Verifica se é desktop para alinhar o rootMargin com md:top-16 (64px) ou top-12 (48px)
     const isDesktop = window.matchMedia('(min-width: 768px)').matches
     const offset = isDesktop ? '64px' : '48px'
@@ -37,25 +42,37 @@ export function ContentSection({
     )
 
     if (sentinelRef.current) observer.observe(sentinelRef.current)
-    return () => observer.disconnect()
-  }, [])
+
+    return () => {
+      observer.disconnect()
+      setIsStuck(false) // O reset acontece de forma segura na desmontagem ou mudança de prop
+    }
+  }, [fixed])
 
   return (
     <div className='relative flex w-full scroll-mt-16 flex-col'>
-      <div ref={sentinelRef} className='absolute top-0 h-px w-full' />
+      {fixed && (
+        <div ref={sentinelRef} className='absolute top-0 h-px w-full' />
+      )}
       <div
         className={cn(
-          'sticky top-12 z-10 flex-none py-3 md:top-16',
-          isStuck && 'bg-background/20 shadow backdrop-blur-lg'
+          'flex-none px-4 py-3',
+          fixed && 'sticky top-12 z-10 md:top-16',
+          fixed && isStuck && 'bg-background/20 shadow backdrop-blur-lg'
         )}
       >
-        <h3 className={cn('text-lg font-medium', isStuck && 'text-primary')}>
+        <h3
+          className={cn(
+            'text-lg font-medium',
+            fixed && isStuck && 'text-primary'
+          )}
+        >
           {title}
         </h3>
         <p
           className={cn(
             'text-sm text-muted-foreground',
-            isStuck && 'text-accent-foreground'
+            fixed && isStuck && 'text-secondary'
           )}
         >
           {desc}
