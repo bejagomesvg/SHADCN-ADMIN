@@ -57,7 +57,7 @@ export function ContentSection({
       <div
         className={cn(
           'flex-none py-3',
-          fixed && 'sticky top-12 z-10 md:top-16',
+          fixed && 'sticky top-12 z-20 md:top-16',
           fixed && isStuck && 'bg-background/20 shadow backdrop-blur-lg'
         )}
       >

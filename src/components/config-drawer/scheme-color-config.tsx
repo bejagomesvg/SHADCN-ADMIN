@@ -92,9 +92,9 @@ export function SchemeColorConfig() {
     getPaletteStart(schemeColor)
   )
   const paletteCount = SCHEME_COLOR_OPTIONS.length
-  const visiblePaletteOptions = Array.from(
-    { length: PALETTE_PAGE_SIZE },
-    (_, offset) => SCHEME_COLOR_OPTIONS[(paletteStart + offset) % paletteCount]
+  const visiblePaletteOptions = SCHEME_COLOR_OPTIONS.slice(
+    paletteStart,
+    paletteStart + PALETTE_PAGE_SIZE
   )
   const hasCustomColors = Object.keys(customColors).length > 0
 
@@ -113,22 +113,26 @@ export function SchemeColorConfig() {
       <div className='max-w-md space-y-4'>
         <div className='space-y-1'>
           <div className='relative' aria-label='Select color palette'>
-            <Button
-              type='button'
-              variant='outline'
-              size='icon'
-              className='absolute top-1/2 -left-4 z-10 size-8 -translate-y-1/2 rounded-full bg-background shadow-sm'
-              aria-label='Previous color palettes'
-              onClick={() =>
-                setPaletteStart(
-                  (current) =>
-                    (current - PALETTE_PAGE_SIZE + paletteCount) % paletteCount
-                )
-              }
+            {paletteStart > 0 && (
+              <Button
+                type='button'
+                variant='outline'
+                size='icon'
+                className='absolute top-1/2 -left-4 z-10 size-8 -translate-y-1/2 rounded-full bg-background shadow-sm'
+                aria-label='Previous color palettes'
+                onClick={() =>
+                  setPaletteStart((current) =>
+                    Math.max(0, current - PALETTE_PAGE_SIZE)
+                  )
+                }
+              >
+                <ChevronLeft className='size-4' />
+              </Button>
+            )}
+            <div
+              key={paletteStart}
+              className='grid animate-in grid-cols-3 gap-4 duration-500 fade-in'
             >
-              <ChevronLeft className='size-4' />
-            </Button>
-            <div className='grid grid-cols-3 gap-4'>
               {visiblePaletteOptions.map((option) => {
                 const isSelected = option.value === schemeColor
 
@@ -156,20 +160,25 @@ export function SchemeColorConfig() {
                 )
               })}
             </div>
-            <Button
-              type='button'
-              variant='outline'
-              size='icon'
-              className='absolute top-1/2 -right-4 z-10 size-8 -translate-y-1/2 rounded-full bg-background shadow-sm'
-              aria-label='Next color palettes'
-              onClick={() =>
-                setPaletteStart(
-                  (current) => (current + PALETTE_PAGE_SIZE) % paletteCount
-                )
-              }
-            >
-              <ChevronRight className='size-4' />
-            </Button>
+            {paletteStart + PALETTE_PAGE_SIZE < paletteCount && (
+              <Button
+                type='button'
+                variant='outline'
+                size='icon'
+                className='absolute top-1/2 -right-4 z-10 size-8 -translate-y-1/2 rounded-full bg-background shadow-sm'
+                aria-label='Next color palettes'
+                onClick={() =>
+                  setPaletteStart((current) =>
+                    Math.min(
+                      current + PALETTE_PAGE_SIZE,
+                      paletteCount - PALETTE_PAGE_SIZE
+                    )
+                  )
+                }
+              >
+                <ChevronRight className='size-4' />
+              </Button>
+            )}
           </div>
         </div>
       </div>

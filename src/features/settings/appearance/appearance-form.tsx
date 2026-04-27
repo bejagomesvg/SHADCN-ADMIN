@@ -42,8 +42,8 @@ const appearanceFormSchema = z.object({
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
 const getPalettePageSize = () => {
-  if (typeof window === 'undefined') return 7
-  if (window.innerWidth >= 1536) return 7
+  if (typeof window === 'undefined') return 6
+  if (window.innerWidth >= 1536) return 6
   if (window.innerWidth >= 1280) return 6
   if (window.innerWidth >= 1024) return 5
   if (window.innerWidth >= 768) return 4
@@ -101,9 +101,9 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
     getPaletteStart(schemeColor, getPalettePageSize())
   )
   const paletteCount = SCHEME_COLOR_OPTIONS.length
-  const visiblePaletteOptions = Array.from(
-    { length: palettePageSize },
-    (_, offset) => SCHEME_COLOR_OPTIONS[(paletteStart + offset) % paletteCount]
+  const visiblePaletteOptions = SCHEME_COLOR_OPTIONS.slice(
+    paletteStart,
+    paletteStart + palettePageSize
   )
 
   useEffect(() => {
@@ -273,27 +273,34 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
               </FormDescription>
               <FormMessage />
               <div
-                className='relative w-full px-10 pt-2'
+                className='relative w-fit px-12 pt-2'
                 role='radiogroup'
                 aria-labelledby={schemeColorGroupLabelId}
               >
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='icon'
-                  className='absolute top-1/2 left-0 z-10 size-8 -translate-y-1/2 rounded-full bg-background'
-                  aria-label='Previous color palettes'
-                  onClick={() =>
-                    setPaletteStart(
-                      (current) =>
-                        (current - palettePageSize + paletteCount) %
-                        paletteCount
-                    )
-                  }
+                {paletteStart > 0 && (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='icon'
+                    className='absolute top-1/2 left-0 z-10 size-8 -translate-y-1/2 rounded-full bg-background'
+                    aria-label='Previous color palettes'
+                    onClick={() =>
+                      setPaletteStart((current) =>
+                        Math.max(0, current - palettePageSize)
+                      )
+                    }
+                  >
+                    <ChevronLeft className='size-4' />
+                  </Button>
+                )}
+                <div
+                  key={paletteStart}
+                  className='grid animate-in grid-flow-col justify-center gap-4 pt-3 duration-500 fade-in [&>button]:w-39 [&>button>div:first-child]:h-25 [&>button>div:first-child]:w-39'
+                  style={{
+                    width: `${palettePageSize * 156 + (palettePageSize - 1) * 16}px`,
+                    gridAutoColumns: '156px',
+                  }}
                 >
-                  <ChevronLeft className='size-4' />
-                </Button>
-                <div className='grid auto-cols-[156px] grid-flow-col gap-4 pt-3 [&>button]:w-39 [&>button>div:first-child]:h-25 [&>button>div:first-child]:w-39'>
                   {visiblePaletteOptions.map((option) => {
                     const isSelected = option.value === field.value
 
@@ -323,20 +330,25 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
                     )
                   })}
                 </div>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='icon'
-                  className='absolute top-1/2 right-0 z-10 size-8 -translate-y-1/2 rounded-full bg-background'
-                  aria-label='Next color palettes'
-                  onClick={() =>
-                    setPaletteStart(
-                      (current) => (current + palettePageSize) % paletteCount
-                    )
-                  }
-                >
-                  <ChevronRight className='size-4' />
-                </Button>
+                {paletteStart + palettePageSize < paletteCount && (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='icon'
+                    className='absolute top-1/2 right-0 z-10 size-8 -translate-y-1/2 rounded-full bg-background'
+                    aria-label='Next color palettes'
+                    onClick={() =>
+                      setPaletteStart((current) =>
+                        Math.min(
+                          current + palettePageSize,
+                          paletteCount - palettePageSize
+                        )
+                      )
+                    }
+                  >
+                    <ChevronRight className='size-4' />
+                  </Button>
+                )}
               </div>
             </FormItem>
           )}
