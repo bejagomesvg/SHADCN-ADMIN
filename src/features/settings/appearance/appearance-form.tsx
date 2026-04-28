@@ -37,6 +37,7 @@ const appearanceFormSchema = z.object({
   schemeColor: z.string(),
   group: z.enum(COLOR_GROUP_VALUES),
   fixedHeader: z.boolean(),
+  fixedTabs: z.boolean(),
 })
 
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
@@ -82,9 +83,17 @@ const themeOptions = [
 
 interface AppearanceFormProps {
   onFixedHeaderChange?: (fixed: boolean) => void
+  onFixedTabsChange?: (fixed: boolean) => void
+  defaultFixedHeader?: boolean // Mantido para fixedHeader
+  defaultFixedTabs?: boolean
 }
 
-export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
+export function AppearanceForm({
+  onFixedHeaderChange,
+  onFixedTabsChange,
+  defaultFixedHeader = true, // Mantido para fixedHeader
+  defaultFixedTabs = true,
+}: AppearanceFormProps) {
   const { font, setFont } = useFont()
   const {
     customColors,
@@ -128,7 +137,8 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
     font,
     schemeColor,
     group: 'primary',
-    fixedHeader: true,
+    fixedHeader: defaultFixedHeader,
+    fixedTabs: defaultFixedTabs,
   }
 
   const form = useForm<AppearanceFormValues>({
@@ -141,7 +151,8 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
     if (data.theme != theme) setTheme(data.theme)
     if (data.schemeColor != schemeColor)
       setSchemeColor(data.schemeColor as SchemeColor)
-    onFixedHeaderChange?.(data.fixedHeader)
+    onFixedHeaderChange?.(data.fixedHeader) // Mantido para fixedHeader
+    onFixedTabsChange?.(data.fixedTabs)
 
     const palettePreset = getSchemeColorPreset(
       data.schemeColor as SchemeColor,
@@ -174,7 +185,7 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start'>
+        <div className='grid grid-cols-1 gap-4 md:grid-cols-3 md:items-start'>
           <FormField
             control={form.control}
             name='font'
@@ -215,6 +226,27 @@ export function AppearanceForm({ onFixedHeaderChange }: AppearanceFormProps) {
                 <FormLabel>Fixed Subheader</FormLabel>
                 <FormDescription className='font-manrope'>
                   Fix subheader when scrolling.
+                </FormDescription>
+                <FormMessage />
+                <div className='relative w-max'>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </div>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name='fixedTabs'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fixed Tabs</FormLabel>
+                <FormDescription className='font-manrope'>
+                  Fix TabsList when scrolling.
                 </FormDescription>
                 <FormMessage />
                 <div className='relative w-max'>

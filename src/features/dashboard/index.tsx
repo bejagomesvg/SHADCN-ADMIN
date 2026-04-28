@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -14,7 +16,17 @@ import { Analytics } from './components/analytics'
 import { Overview } from './components/overview'
 import { RecentSales } from './components/recent-sales'
 
+const LOCAL_STORAGE_KEY_STICKY_TABS = 'shadcn-admin-sticky-tabs-enabled'
+
 export function Dashboard() {
+  const [isStickyTabsEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY_STICKY_TABS)
+      return storedValue === null ? true : storedValue === 'true'
+    }
+    return true
+  })
+
   return (
     // <>
     // <AppHeaderSlot>
@@ -33,7 +45,12 @@ export function Dashboard() {
         defaultValue='overview'
         className='space-y-4'
       >
-        <div className='w-full overflow-x-auto pb-2'>
+        <div
+          className={cn(
+            'w-full overflow-x-auto pt-1 pb-3',
+            isStickyTabsEnabled && 'sticky top-16 z-10'
+          )}
+        >
           <TabsList>
             <TabsTrigger value='overview'>Overview</TabsTrigger>
             <TabsTrigger value='analytics'>Analytics</TabsTrigger>
