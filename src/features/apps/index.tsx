@@ -138,7 +138,7 @@ export function Apps() {
               <Card className='h-full min-h-44 gap-0 py-0 shadow-xs transition-shadow hover:shadow-md'>
                 <CardContent className='flex h-full flex-col p-5'>
                   <div className='mb-6 flex items-start justify-between gap-4'>
-                    <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground shadow-sm ring-1 ring-border/50 [&_svg]:size-5 [&_svg]:shrink-0'>
+                    <div className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-accent text-primary shadow-sm ring-1 ring-border/50 [&_svg]:size-5 [&_svg]:shrink-0'>
                       <span className='flex items-center justify-center [&_svg]:size-5 [&_svg]:shrink-0'>
                         {app.logo}
                       </span>
