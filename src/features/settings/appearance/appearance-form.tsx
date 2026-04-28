@@ -146,6 +146,14 @@ export function AppearanceForm({
     defaultValues,
   })
 
+  useEffect(() => {
+    form.reset({
+      ...form.getValues(),
+      fixedHeader: defaultFixedHeader,
+      fixedTabs: defaultFixedTabs,
+    })
+  }, [defaultFixedHeader, defaultFixedTabs, form])
+
   function onSubmit(data: AppearanceFormValues) {
     if (data.font != font) setFont(data.font)
     if (data.theme != theme) setTheme(data.theme)

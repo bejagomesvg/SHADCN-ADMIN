@@ -3,20 +3,29 @@ import { ContentSection } from '../components/content-section'
 import { AppearanceForm } from './appearance-form'
 
 const LOCAL_STORAGE_KEY_STICKY_TABS = 'shadcn-admin-sticky-tabs-enabled'
+const LOCAL_STORAGE_KEY_FIXED_HEADER = 'shadcn-admin-fixed-header'
 
 export function SettingsAppearance() {
-  const [isFixed, setIsFixed] = useState(true)
-  const [isStickyTabsEnabled, setIsStickyTabsEnabled] = useState<boolean>(
-    () => {
-      if (typeof window !== 'undefined') {
-        const storedValue = localStorage.getItem(LOCAL_STORAGE_KEY_STICKY_TABS)
-        return storedValue === null ? true : storedValue === 'true' // Se não houver valor, assume true. Caso contrário, converte para booleano.
-      }
-      return true // Valor padrão para SSR ou se localStorage não estiver disponível
+  const [isFixed, setIsFixed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY_FIXED_HEADER)
+      return saved === null ? true : saved === 'true'
     }
-  )
+    return true
+  })
 
-  // Persiste a alteração no localStorage sempre que o estado mudar
+  const [isStickyTabsEnabled, setIsStickyTabsEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY_STICKY_TABS)
+      return saved === null ? true : saved === 'true'
+    }
+    return true
+  })
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY_FIXED_HEADER, isFixed.toString())
+  }, [isFixed])
+
   useEffect(() => {
     localStorage.setItem(
       LOCAL_STORAGE_KEY_STICKY_TABS,

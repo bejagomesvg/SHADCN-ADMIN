@@ -40,11 +40,7 @@ export function Dashboard() {
           <Button>Download</Button>
         </div>
       </div>
-      <Tabs
-        orientation='vertical'
-        defaultValue='overview'
-        className='space-y-4'
-      >
+      <Tabs defaultValue='overview' className='space-y-4'>
         <div
           className={cn(
             'w-full overflow-x-auto pt-1 pb-3',
